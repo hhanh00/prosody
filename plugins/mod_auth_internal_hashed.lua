@@ -15,18 +15,17 @@ local generate_uuid = require "util.uuid".generate;
 local new_sasl = require "util.sasl".new;
 local hex = require"util.hex";
 local to_hex, from_hex = hex.to, hex.from;
+prosody.unlock_globals();
 local http = require "socket.http";
 local ltn12 = require "ltn12";
+prosody.lock_globals();
 local json = require "util.json";
 
 local log = module._log;
 local host = module.host;
 
 local accounts = module:open_store("accounts");
-
-local options = module:get_option("auth_token");
-local post_url = options and options.post_url;
-assert(post_url, "No HTTP POST URL provided");
+local post_url = module:get_option("auth_token_url");
 
 -- Default; can be set per-user
 local default_iteration_count = 4096;
