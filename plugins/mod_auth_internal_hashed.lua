@@ -15,13 +15,18 @@ local generate_uuid = require "util.uuid".generate;
 local new_sasl = require "util.sasl".new;
 local hex = require"util.hex";
 local to_hex, from_hex = hex.to, hex.from;
+local http = require "socket.http";
+local ltn12 = require "ltn12";
+local json = require "util.json";
 
 local log = module._log;
 local host = module.host;
 
 local accounts = module:open_store("accounts");
 
-
+local options = module:get_option("auth_token");
+local post_url = options and options.post_url;
+assert(post_url, "No HTTP POST URL provided");
 
 -- Default; can be set per-user
 local default_iteration_count = 4096;
@@ -132,7 +137,25 @@ function provider.get_sasl_handler()
 			stored_key = stored_key and from_hex(stored_key);
 			server_key = server_key and from_hex(server_key);
 			return stored_key, server_key, iteration_count, salt, true;
-		end
+		end,
+		token_test = function(_, token)
+			local t = {};
+			local _, status_code = http.request {
+				url = post_url,
+				sink = ltn12.sink.table(t),
+				headers = {
+					Authorization = "Token "..token
+				}
+			}
+			if status_code == 200 then
+				local b = table.concat(t)
+				local user = json.decode(b);
+				local username = user.username;
+				return true, username
+			else
+				return false
+			end
+		end,
 	};
 	return new_sasl(host, testpass_authentication_profile);
 end
