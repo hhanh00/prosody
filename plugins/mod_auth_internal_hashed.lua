@@ -15,10 +15,14 @@ local generate_uuid = require "util.uuid".generate;
 local new_sasl = require "util.sasl".new;
 local hex = require"util.hex";
 local to_hex, from_hex = hex.to, hex.from;
-prosody.unlock_globals();
+if prosody.unlock_globals then
+	prosody.unlock_globals();
+end
 local http = require "socket.http";
 local ltn12 = require "ltn12";
-prosody.lock_globals();
+if prosody.lock_globals then
+	prosody.lock_globals();
+end
 local json = require "util.json";
 
 local log = module._log;
